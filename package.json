@@ -1,0 +1,14 @@
+{
+  "name" : "ai-attuned",
+  "version": "0.0.1",
+  "description": "Facebook dataset retreival for the AI stuff",
+  "keywords": ["spotify", "music", "AI", "OpenGraph", "facebookapi"],
+  "license" : "MIT",
+  "author" : "Pratham Agrawal",
+  "dependencies"  : {
+    "express"   : "3.x",
+    "jade"      : "*",
+    "connect"   : "*",
+    "fbgraph"   : "*"
+  }
+}
