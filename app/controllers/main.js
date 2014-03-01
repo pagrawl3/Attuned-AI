@@ -39,7 +39,6 @@ exports.authenticate = function(req, res) {
 				if (!data) {																				//data doesn't exist, make the first call
 					graph.get(fetchURL, {access_token: facebookRes.access_token}, function(err, data) {		//retreive likes
 						all_data = all_data.concat(data.data);												//merge the new data with the all_data array
-						console.log(all_data);
 					   	fetch(fetchURL, data, all_data, callback);											//recursive function fetches the remaining pages
 					});
 				} else if (data && data.paging && data.paging.next) {
@@ -57,7 +56,7 @@ exports.authenticate = function(req, res) {
 	    		var client 	= new zerorpc.Client();
 				client.connect("tcp://127.0.0.1:4242");
 	    		client.invoke(channel, data, function(error, data, more) {
-					console.log(data);
+					// console.log(data);
 	    		});
 	    	}
 

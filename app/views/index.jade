@@ -1,7 +1,10 @@
 include ./includes/header
 
 body
-	a(href="/auth/facebook")
-		h3 Login with Facebook
+	#wrapper
+		.logo-wrapper
+			.logo
+		a(href="/auth/facebook").login
+			h3 Login with Facebook
 
 	include ./includes/footer
