@@ -14,7 +14,8 @@ module.exports = function (app) {
 
 	//Default app configurations
 	app.configure(function() {
-		app.use(express.bodyParser()) //bodyParser
+		app.use(express.json());
+		app.use(express.urlencoded());
 		app.use(express.methodOverride())
 		app.use(app.router)	//Use the router
 	})
