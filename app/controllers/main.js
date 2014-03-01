@@ -35,20 +35,20 @@ exports.authenticate = function(req, res) {
 			"code"			: req.query.code
 		}, function (err, facebookRes) {
 
-			var all_data = [];																				//this array will hold all the like objects returned from facebook
-			var fetch = function(fetchURL, data, callback) {
+			var fetch = function(fetchURL, data, all_data, callback) {
 				if (!data) {																				//data doesn't exist, make the first call
 					graph.get(fetchURL, {access_token: facebookRes.access_token}, function(err, data) {		//retreive likes
 						all_data = all_data.concat(data.data);												//merge the new data with the all_data array
-					   	fetch(fetchURL, data, callback);													//recursive function fetches the remaining pages
+						console.log(all_data);
+					   	fetch(fetchURL, data, all_data, callback);											//recursive function fetches the remaining pages
 					});
 				} else if (data && data.paging && data.paging.next) {
 					graph.get(data.paging.next, function(err, data) {
 						all_data = all_data.concat(data.data);												//merge the new data with the all_data array
-						fetch(fetchURL, data, callback);													//recursively call the function to fetch the next pages
+						fetch(fetchURL, data, all_data, callback);											//recursively call the function to fetch the next pages
 	    			});
 				} else {
-					callback(all_data);																	//done fetching, call the callback function
+					callback(all_data);																		//done fetching, call the callback function
 				}
 			}
 
@@ -61,10 +61,12 @@ exports.authenticate = function(req, res) {
 	    		});
 	    	}
 
-			fetch('me/likes', false, function(data){
+	    	var all_likes = [];
+			fetch('me/likes', false, all_likes, function(data){
 				res.send(data);
 				sendToPython('processLikes', data);
 			});
+
 
 		});
 	}
