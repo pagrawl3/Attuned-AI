@@ -21,9 +21,9 @@ exports.authenticate = function(req, res) {
 		});
 
 		if (!req.query.error)
-			res.redirect(authUrl); //checks whether a user denied the app facebook login/permissions
+			res.redirect(authUrl); 		//checks whether a user denied the app facebook login/permissions
 		else
-			res.send('access denied'); //req.query.error == 'access_denied'
+			res.send('access denied'); 	//req.query.error == 'access_denied'
 	}
 	else {
 		// code is set
@@ -34,51 +34,37 @@ exports.authenticate = function(req, res) {
 			"client_secret"	: conf.client_secret,
 			"code"			: req.query.code
 		}, function (err, facebookRes) {
-			graph.setAccessToken(facebookRes);	//set the access token -- need to figure out auto renewal
 
-
-			//configuration options for the web request mad by the Request module
-			var options = {
-			    timeout:  3000
-			  , pool:     { maxSockets:  Infinity }
-			  , headers:  { connection:  "keep-alive" }
-			};
-
-			var all_likes = [];	//this array will hold all the like objects returned from facebook
-
-	    	var fetchNextPage = function(data) {
-	    		if(data.paging && data.paging.next) {	//check if this is not the last page
-	    			graph.get(data.paging.next, function(err, res) {
-						all_likes = all_likes.concat(res.data);	//merge the new data with the all_likes array
-						fetchNextPage(res);	//recursively call the function to fetch the next page
+			var all_data = [];																				//this array will hold all the like objects returned from facebook
+			var fetch = function(fetchURL, data, callback) {
+				if (!data) {																				//data doesn't exist, make the first call
+					graph.get(fetchURL, {access_token: facebookRes.access_token}, function(err, data) {		//retreive likes
+						all_data = all_data.concat(data.data);												//merge the new data with the all_data array
+					   	fetch(fetchURL, data, callback);													//recursive function fetches the remaining pages
+					});
+				} else if (data && data.paging && data.paging.next) {
+					graph.get(data.paging.next, function(err, data) {
+						all_data = all_data.concat(data.data);												//merge the new data with the all_data array
+						fetch(fetchURL, data, callback);													//recursively call the function to fetch the next pages
 	    			});
+				} else {
+					callback(all_data);																	//done fetching, call the callback function
 				}
-				else {
-					//done fetching all likes
-					all_likes.shift();			//remove that weird null value at the beginning of the array
-					res.send(all_likes);		//send all the likes to the client (browser)
-					sendToPython(all_likes);
-				}
-	    	}
+			}
 
-	    	var sendToPython = function(data) {
+	    	var sendToPython = function(channel, data) {
 				var zerorpc = require("zerorpc");
 	    		var client 	= new zerorpc.Client();
-
 				client.connect("tcp://127.0.0.1:4242");
-
-	    		client.invoke("processLikes", data, function(error, res, more) {
-					console.log(res);
+	    		client.invoke(channel, data, function(error, data, more) {
+					console.log(data);
 	    		});
 	    	}
 
-
-			graph
-				.setOptions(options)
-				.get("me/likes",{access_token: facebookRes.access_token}, function(err, data) {	//retreive likes
-					all_likes = all_likes.concat(res.data);		//merge the new data with the all_likes array
-			    	fetchNextPage(data);						//recursive function fetches the remaining pages
-				});
+			fetch('me/likes', false, function(data){
+				res.send(data);
+				sendToPython('processLikes', data);
+			});
 
 		});
 	}
