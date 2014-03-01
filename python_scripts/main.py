@@ -1,8 +1,9 @@
 import zerorpc
+import json
 
 class RPC(object):
     def processLikes(self, data):
-    	print data
+    	print json.dumps(data, sort_keys=False, indent=4)
         return "%s" % data
 
 server = zerorpc.Server(RPC())
