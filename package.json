@@ -9,6 +9,7 @@
     "express"   : "3.x",
     "jade"      : "*",
     "connect"   : "*",
-    "fbgraph"   : "*"
+    "fbgraph"   : "*",
+    "zerorpc"   : "*"
   }
 }
