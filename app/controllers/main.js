@@ -2,8 +2,8 @@ var graph	= require('fbgraph');
 var conf	= {
 	client_id		: '217617381771470',
 	client_secret	: '403a70ba74957d4f8a1ca77dbc6e69a2',
-	scope			: 'email, user_about_me, user_birthday, user_location, publish_stream, user_actions:music',
-	redirect_uri	: 'http://localhost:3000/auth/facebook'
+	scope			: 'email, user_about_me, user_birthday, user_location, publish_stream, user_actions:music, user_interests',
+	redirect_uri	: 'http://localhost:3001/auth/facebook'
 }
 
 exports.index = function(req, res) {
@@ -51,20 +51,53 @@ exports.authenticate = function(req, res) {
 				}
 			}
 
-	    	var sendToPython = function(channel, data) {
+			var estabilishPythonConnection = function(){
 				var zerorpc = require("zerorpc");
 	    		var client 	= new zerorpc.Client();
 				client.connect("tcp://127.0.0.1:4242");
+				return client
+			}
+
+	    	var sendToPython = function(channel, data, client, callback) {
 	    		client.invoke(channel, data, function(error, data, more) {
-					// console.log(data);
+					callback(data);
 	    		});
 	    	}
 
-	    	var all_likes = [];
-			fetch('me/likes', false, all_likes, function(data){
-				res.send(data);
-				sendToPython('processLikes', data);
-			});
+	    	
+	    	var startFetchProcess = function(user){
+		    	var all_likes = [];
+				fetch('me/likes', false, all_likes, function(data){
+					var likes = data;
+					var all_music = [];
+					fetch('me/music', false, all_likes, function(data){
+						var music = data;
+						var all_interests = [];
+						fetch('me/interests', false, all_likes, function(data){
+							var interests = data;
+							sendToPython('dataProcessor', {likes: likes, music: music, interests: interests, user: user}, pythonClient, function(data){
+								// console.log('received from python : ', data);
+							});
+							res.send({likes: likes, music: music, interests: interests});
+						});
+					});
+				});
+	    	}
+
+	    	var pythonClient = estabilishPythonConnection();
+	    	graph.get('me', function(err, data) {
+	    		var user = data;
+	    		sendToPython('connectUser', {user: user}, pythonClient, function(data){
+	    			var response = JSON.parse(data);
+	    			if (!response.dataExists) {
+	    				startFetchProcess(user);
+	    			}
+	    			else {
+	    				res.send({success: true});
+	    			}
+	    		});
+	    	});
+
 
 
 		});
