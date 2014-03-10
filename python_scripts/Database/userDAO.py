@@ -1,3 +1,6 @@
+from pprint import pprint
+import pymongo
+
 class userDAO:
 
 	users = None
@@ -39,6 +42,7 @@ class userDAO:
 
 	def updateUser(self,userInfo, userID = None, facebook_id = None, returnValue=False):
 		print "::updateUser"
+
 		if(userID!=None):
 			userInfo["_id"] = userID
 		else: userID = userInfo["_id"]
@@ -49,5 +53,6 @@ class userDAO:
 
 		user = self.getUser(userID,facebook_id)
 		self.users.update(user,userInfo) #,{ upsert: true }
+		#pprint(user)
 		if(returnValue==True):
 			return self.getUser(facebook_id=facebook_id)

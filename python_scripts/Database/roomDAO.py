@@ -1,3 +1,7 @@
+from pprint import pprint
+import pymongo
+
+
 class roomDAO:
 
 	rooms = None

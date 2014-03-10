@@ -1,0 +1,98 @@
+import pylast
+import json
+import pyechonest
+from pyechonest import artist
+
+def getSimilarArtists(name,limit):
+	print "::getSimilarArtists"
+	#limit = 10
+	#name = "System of a Down"
+	artist = network.get_artist(name)
+	similar = artist.get_similar()
+
+	if limit is not None:
+		similar = similar[:limit]
+	return similar
+
+
+#not working yet. all tracks return null
+def getSimilarTracks(name,limit):
+	print "::getSimilarTracks"
+	#limit = 10
+	#name = "System of a Down"
+	track = network.get_track("eminem", "monster")
+	similar = track.get_similar();
+
+	if limit is not None:
+		similar = similar[:limit]
+	return similar
+
+
+def getAllTopTracks(artists, limit):
+	print "::getAllTopTracks"
+	TopList = list()
+	for item in artists[:limit]:
+		topTracks = pylast.Artist.get_top_tracks(item[0])
+		for track in topTracks[:limit]:
+
+			TopList.append({
+								'artist':track[0].artist,
+								'title':track[0].title,
+								'similarity': item[1]
+							})
+	#if limit is not None:
+	#	TopList = TopList[:limit]
+	return TopList
+	
+def appendPopularityInfo(listOfTracks):
+	print "::appendPopularityInfo"
+	for track in listOfTracks:
+		track['popularity'],track['familiarity'] = getPopularity(track['artist'],track['title'])
+		track['score'],track['similar_component'],track['popular_component'] = getScore(track,.8,.3) 
+	return listOfTracks
+
+def getPopularity(artist_name,song_title):
+	#print "::getPopularity"
+	track = pyechonest.song.search(artist=artist_name, title=song_title, results = 1)
+	Popularity = (track[0].song_hotttnesss+track[0].artist_hotttnesss)/2
+	Familiarity = track[0].artist_familiarity 
+	return Popularity,Familiarity
+
+def appendScoreInfo(listOfTracks):
+	print "::appendScoreInfo"
+	for track in listOfTracks:
+		track['score'] = getScore(track) 
+	return listOfTracks
+
+def getScore(track,weight_currentness, weight_similarness):
+	Popularity = track['popularity']
+	Familiarity = track['familiarity']
+	Similarity = track['similarity']
+	similar_component = ( Similarity * weight_similarness )
+	popular_component = (Popularity*(1-weight_currentness) + Familiarity*weight_currentness)*(1-weight_similarness) 
+	score = similar_component + popular_component  
+	return score,similar_component,popular_component
+
+# You have to have your own unique two values for API_KEY and API_SECRET
+# Obtain yours from http://www.last.fm/api/account for Last.fm
+API_KEY = "636d317dec99cfc2f19ce187a6d8c93d" # this is a sample key
+API_SECRET = "84a7ec870e3b95c88e841d5b6b72adf3"
+
+# In order to perform a write operation you need to authenticate yourself
+#username = "your_user_name"
+#password_hash = pylast.md5("your_password")
+
+#network = pylast.LastFMNetwork(api_key = API_KEY, api_secret = API_SECRET, username = username, password_hash = password_hash)
+network = pylast.LastFMNetwork(api_key = API_KEY, api_secret = API_SECRET)
+pyechonest.config.ECHO_NEST_API_KEY="RJU1OKSCJG82R3IW7"
+limit = 10
+similar = getSimilarArtists("Snoop Dogg",limit)
+TopList = getAllTopTracks(similar,limit/3)
+TopList = appendPopularityInfo(TopList)
+#TopList = appendScoreInfo(TopList)
+TopList = sorted(TopList, key=lambda track: track['score'], reverse=True)
+print "\tArtist - Title \t(Similarity, Popularity, Familiarity ,Score)"
+print "\t============================================================="
+for item in TopList:
+	print "\t%s - %s (%s, %s, %s) (%s : %s, %s)" % (item['artist'], item['title'], item['similarity'], item['popularity'], item['familiarity']
+														,item['score'],item['similar_component'],item['popular_component'] )
